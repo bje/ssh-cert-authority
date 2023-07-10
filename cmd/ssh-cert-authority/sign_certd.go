@@ -13,8 +13,9 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/kms"
 	"github.com/cloudtools/ssh-cert-authority/client"
-	"github.com/cloudtools/ssh-cert-authority/util"
-	"github.com/cloudtools/ssh-cert-authority/version"
+	"github.com/cloudtools/ssh-cert-authority/internal/config"
+	"github.com/cloudtools/ssh-cert-authority/internal/util"
+	"github.com/cloudtools/ssh-cert-authority/internal/version"
 	"github.com/codegangsta/cli"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
@@ -120,19 +121,19 @@ func newcertRequest() certRequest {
 }
 
 type certRequestHandler struct {
-	Config       map[string]ssh_ca_util.SignerdConfig
+	Config       map[string]config.SignerdConfig
 	state        map[string]certRequest
 	sshAgentConn io.ReadWriter
 	stateMutex   sync.RWMutex
 }
 
 type signingRequest struct {
-	config      *ssh_ca_util.SignerdConfig
+	config      config.SignerdConfig
 	environment string
 	cert        *ssh.Certificate
 }
 
-func (h *certRequestHandler) setupPrivateKeys(config map[string]ssh_ca_util.SignerdConfig) error {
+func (h *certRequestHandler) setupPrivateKeys(config map[string]config.SignerdConfig) error {
 	for env, cfg := range config {
 		if cfg.PrivateKeyFile == "" {
 			continue
@@ -192,7 +193,7 @@ func (h *certRequestHandler) setupPrivateKeys(config map[string]ssh_ca_util.Sign
 			if err != nil {
 				return fmt.Errorf("Unable to create signer from pk %s: %v", keyUrl.Path, err)
 			}
-			keyFp := ssh_ca_util.MakeFingerprint(signer.PublicKey().Marshal())
+			keyFp := util.MakeFingerprint(signer.PublicKey().Marshal())
 			log.Printf("Added private key for env %s: %s", env, keyFp)
 			cfg = config[env]
 			cfg.SigningKeyFingerprint = keyFp
@@ -262,7 +263,7 @@ func (h *certRequestHandler) createSigningRequest(rw http.ResponseWriter, req *h
 		nextSerial |= uint64(byteVal)
 	}
 
-	requesterFp := ssh_ca_util.MakeFingerprint(cert.SignatureKey.Marshal())
+	requesterFp := util.MakeFingerprint(cert.SignatureKey.Marshal())
 
 	signed, err := h.saveSigningRequest(config, environment, reason, requestIDStr, nextSerial, cert)
 	if err != nil {
@@ -302,8 +303,8 @@ func (h *certRequestHandler) createSigningRequest(rw http.ResponseWriter, req *h
 	return
 }
 
-func (h *certRequestHandler) saveSigningRequest(config ssh_ca_util.SignerdConfig, environment, reason, requestIDStr string, requestSerial uint64, cert *ssh.Certificate) (bool, error) {
-	requesterFp := ssh_ca_util.MakeFingerprint(cert.SignatureKey.Marshal())
+func (h *certRequestHandler) saveSigningRequest(config config.SignerdConfig, environment, reason, requestIDStr string, requestSerial uint64, cert *ssh.Certificate) (bool, error) {
+	requesterFp := util.MakeFingerprint(cert.SignatureKey.Marshal())
 
 	maxValidBefore := uint64(time.Now().Add(time.Duration(config.MaxCertLifetime) * time.Second).Unix())
 
@@ -385,7 +386,7 @@ func (h *certRequestHandler) extractCertFromRequest(req *http.Request) (*ssh.Cer
 func (h *certRequestHandler) validateCert(cert *ssh.Certificate, authorizedSigners map[string]string) error {
 	var certChecker ssh.CertChecker
 	certChecker.IsUserAuthority = func(auth ssh.PublicKey) bool {
-		fingerprint := ssh_ca_util.MakeFingerprint(auth.Marshal())
+		fingerprint := util.MakeFingerprint(auth.Marshal())
 		_, ok := authorizedSigners[fingerprint]
 		return ok
 	}
@@ -575,7 +576,7 @@ func (h *certRequestHandler) signOrRejectRequest(rw http.ResponseWriter, req *ht
 		return
 	}
 
-	signerFp := ssh_ca_util.MakeFingerprint(signedCert.SignatureKey.Marshal())
+	signerFp := util.MakeFingerprint(signedCert.SignatureKey.Marshal())
 
 	// Verifying that the cert being posted to us here matches the one in the
 	// request. That is, that an attacker isn't using an old signature to sign a
@@ -591,7 +592,7 @@ func (h *certRequestHandler) signOrRejectRequest(rw http.ResponseWriter, req *ht
 		return
 	}
 
-	requesterFp := ssh_ca_util.MakeFingerprint(requestedCert.Key.Marshal())
+	requesterFp := util.MakeFingerprint(requestedCert.Key.Marshal())
 
 	// Make sure the key attempting to sign the request is not the same as the key in the CSR
 	if signerFp == requesterFp {
@@ -612,7 +613,7 @@ func (h *certRequestHandler) signOrRejectRequest(rw http.ResponseWriter, req *ht
 	}
 }
 
-func (h *certRequestHandler) rejectRequest(requestID string, signerFp string, envConfig ssh_ca_util.SignerdConfig) error {
+func (h *certRequestHandler) rejectRequest(requestID string, signerFp string, envConfig config.SignerdConfig) error {
 	log.Printf("Reject received for id %s", requestID)
 	h.stateMutex.Lock()
 	defer h.stateMutex.Unlock()
@@ -623,7 +624,7 @@ func (h *certRequestHandler) rejectRequest(requestID string, signerFp string, en
 	return nil
 }
 
-func (h *certRequestHandler) addConfirmation(requestID string, signerFp string, envConfig ssh_ca_util.SignerdConfig) error {
+func (h *certRequestHandler) addConfirmation(requestID string, signerFp string, envConfig config.SignerdConfig) error {
 	h.stateMutex.RLock()
 	certRejected := h.state[requestID].certRejected
 	h.stateMutex.RUnlock()
@@ -665,7 +666,7 @@ func (h *certRequestHandler) maybeSignWithCa(requestID string, numSignersRequire
 			return true, nil
 		}
 		log.Printf("Received %d signatures for %s, signing now.\n", len(h.state[requestID].signatures), requestID)
-		signer, err := ssh_ca_util.GetSignerForFingerprintOrUrl(signingKeyFingerprint, h.sshAgentConn)
+		signer, err := util.GetSignerForFingerprintOrUrl(signingKeyFingerprint, h.sshAgentConn)
 		if err != nil {
 			log.Printf("Couldn't find signing key for request %s, unable to sign request: %s\n", requestID, err)
 			return false, fmt.Errorf("Couldn't find signing key, unable to sign. Sorry.")
@@ -719,29 +720,29 @@ func signdFlags() []cli.Flag {
 
 func signCertd(c *cli.Context) error {
 	configPath := c.String("config-file")
-	config := make(map[string]ssh_ca_util.SignerdConfig)
-	err := ssh_ca_util.LoadConfig(configPath, &config)
+	config2 := make(map[string]config.SignerdConfig)
+	err := config.LoadConfig(configPath, &config2)
 	if err != nil {
 		return cli.NewExitError(fmt.Sprintf("Load Config failed: %s", err), 1)
 	}
-	for envName, configObj := range config {
+	for envName, configObj := range config2 {
 		err = areCriticalOptionsValid(configObj.CriticalOptions)
 		if err != nil {
 			return cli.NewExitError(fmt.Sprintf("Error validation config for env '%s': %s", envName, err), 1)
 		}
 	}
-	err = runSignCertd(config, c.String("listen-address"), c.Bool("reverse-proxy"))
+	err = runSignCertd(config2, c.String("listen-address"), c.Bool("reverse-proxy"))
 	return err
 }
 
-func makeCertRequestHandler(config map[string]ssh_ca_util.SignerdConfig) certRequestHandler {
+func makeCertRequestHandler(config map[string]config.SignerdConfig) certRequestHandler {
 	var requestHandler certRequestHandler
 	requestHandler.Config = config
 	requestHandler.state = make(map[string]certRequest)
 	return requestHandler
 }
 
-func runSignCertd(config map[string]ssh_ca_util.SignerdConfig, addr string, is_proxied bool) error {
+func runSignCertd(config map[string]config.SignerdConfig, addr string, is_proxied bool) error {
 	log.Println("Server running version", version.BuildVersion)
 	log.Println("Using SSH agent at", os.Getenv("SSH_AUTH_SOCK"))
 

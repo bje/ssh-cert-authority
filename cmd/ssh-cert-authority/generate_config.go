@@ -3,7 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/cloudtools/ssh-cert-authority/util"
+	"github.com/cloudtools/ssh-cert-authority/internal/config"
 	"github.com/codegangsta/cli"
 	"io/ioutil"
 	"net/http"
@@ -57,9 +57,9 @@ func cmdGenerateConfig(c *cli.Context) error {
 	var environments []string
 	json.Unmarshal(getRespBuf, &environments)
 
-	wholeConfig := make(map[string]ssh_ca_util.RequesterConfig, len(environments))
+	wholeConfig := make(map[string]config.RequesterConfig, len(environments))
 	for _, envName := range environments {
-		wholeConfig[envName] = ssh_ca_util.RequesterConfig{
+		wholeConfig[envName] = config.RequesterConfig{
 			PublicKeyPath: c.String("key-file"),
 			SignerUrl:     url,
 		}

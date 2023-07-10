@@ -4,7 +4,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/cloudtools/ssh-cert-authority/util"
+	"github.com/cloudtools/ssh-cert-authority/internal/config"
 	"github.com/codegangsta/cli"
 	"golang.org/x/crypto/ssh"
 	"io/ioutil"
@@ -44,13 +44,13 @@ func listCerts(c *cli.Context) error {
 	environment := c.String("environment")
 	showAll := c.Bool("show-all")
 
-	allConfig := make(map[string]ssh_ca_util.RequesterConfig)
-	err := ssh_ca_util.LoadConfig(configPath, &allConfig)
-	wrongTypeConfig, err := ssh_ca_util.GetConfigForEnv(environment, &allConfig)
+	allConfig := make(map[string]config.RequesterConfig)
+	err := config.LoadConfig(configPath, &allConfig)
+	wrongTypeConfig, err := config.GetConfigForEnv(environment, &allConfig)
 	if err != nil {
 		return cli.NewExitError(fmt.Sprintf("%s", err), 1)
 	}
-	config := wrongTypeConfig.(ssh_ca_util.RequesterConfig)
+	config := wrongTypeConfig.(config.RequesterConfig)
 
 	getResp, err := http.Get(config.SignerUrl + "cert/requests")
 	if err != nil {

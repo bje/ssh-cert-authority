@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/cloudtools/ssh-cert-authority/util"
+	"github.com/cloudtools/ssh-cert-authority/internal/config"
 	"golang.org/x/crypto/ssh"
 	"testing"
 )
@@ -51,9 +51,9 @@ const signedByInvalidUserCertString = "ssh-rsa-cert-v01@openssh.com AAAAHHNzaC1y
 const foreverUserCertString = "ssh-rsa-cert-v01@openssh.com AAAAHHNzaC1yc2EtY2VydC12MDFAb3BlbnNzaC5jb20AAAAgOQ95vOpIs7uJPiJ1VikwGbmf7LZWFCkD4SYzP9XEvrkAAAADAQABAAAAYQC6Shl5kUuTGqkSc8D2vP2kls2GoB/eGlgIb0BnM/zsIsbw5cWsPournZN2IwnwMhCFLT/56CzT9ZzVfn26hxn86KMpg76NcfP5Gnd66dsXHhiMXnBeS9r6KPQeqzVInwEAAAAAAAAAAAAAAAEAAAANdGVzdGZhcmZ1dHVyZQAAAAoAAAAGdWJ1bnR1AAAAAAAAAAD//////////wAAAAAAAACCAAAAFXBlcm1pdC1YMTEtZm9yd2FyZGluZwAAAAAAAAAXcGVybWl0LWFnZW50LWZvcndhcmRpbmcAAAAAAAAAFnBlcm1pdC1wb3J0LWZvcndhcmRpbmcAAAAAAAAACnBlcm1pdC1wdHkAAAAAAAAADnBlcm1pdC11c2VyLXJjAAAAAAAAAAAAAAB3AAAAB3NzaC1yc2EAAAADAQABAAAAYQC6Shl5kUuTGqkSc8D2vP2kls2GoB/eGlgIb0BnM/zsIsbw5cWsPournZN2IwnwMhCFLT/56CzT9ZzVfn26hxn86KMpg76NcfP5Gnd66dsXHhiMXnBeS9r6KPQeqzVInwEAAABvAAAAB3NzaC1yc2EAAABgrLrgF1y6t1s0APpKi2JcBDI9OhtsIa7SLaTvRrhAmXc+0OQPlgtmqp581Mwnpv+cuJpoPurO3cQpfzT+XDnRZdoEOBz9wTzkbb6tqQ/O+Ltf5ss5cyKd0GHgGCzUVYB7 user-key"
 const twentyTwentyFiveCertString = "ssh-rsa-cert-v01@openssh.com AAAAHHNzaC1yc2EtY2VydC12MDFAb3BlbnNzaC5jb20AAAAgFJu+SQd43RC/DZjYXtsiSAZslugnFX0LQV44bQL5XlgAAAADAQABAAAAYQC6Shl5kUuTGqkSc8D2vP2kls2GoB/eGlgIb0BnM/zsIsbw5cWsPournZN2IwnwMhCFLT/56CzT9ZzVfn26hxn86KMpg76NcfP5Gnd66dsXHhiMXnBeS9r6KPQeqzVInwEAAAAAAAAAAAAAAAEAAAANdGVzdGZhcmZ1dHVyZQAAAAoAAAAGdWJ1bnR1AAAAAFYW52AAAAAAaOLqwgAAAAAAAACCAAAAFXBlcm1pdC1YMTEtZm9yd2FyZGluZwAAAAAAAAAXcGVybWl0LWFnZW50LWZvcndhcmRpbmcAAAAAAAAAFnBlcm1pdC1wb3J0LWZvcndhcmRpbmcAAAAAAAAACnBlcm1pdC1wdHkAAAAAAAAADnBlcm1pdC11c2VyLXJjAAAAAAAAAAAAAAB3AAAAB3NzaC1yc2EAAAADAQABAAAAYQC6Shl5kUuTGqkSc8D2vP2kls2GoB/eGlgIb0BnM/zsIsbw5cWsPournZN2IwnwMhCFLT/56CzT9ZzVfn26hxn86KMpg76NcfP5Gnd66dsXHhiMXnBeS9r6KPQeqzVInwEAAABvAAAAB3NzaC1yc2EAAABgHPStnlKu6jr8bI0LG3LwwWczyLU56rMozAngOo6ovCAMqXtWZ5GvfUZf+Ok+B+6usJrMZQqrE+OhdC+GVWqzee9nH9Wy1n8ACbGVWJtN63iJxqrMqOnLVvSrd7s7tPqv user-key"
 
-func SetupSignerdConfig(numSignersRequired, maxCertLifetime int) map[string]ssh_ca_util.SignerdConfig {
-	config := make(map[string]ssh_ca_util.SignerdConfig)
-	config["testing"] = ssh_ca_util.SignerdConfig{
+func SetupSignerdConfig(numSignersRequired, maxCertLifetime int) map[string]config.SignerdConfig {
+	config := make(map[string]config.SignerdConfig)
+	config["testing"] = config.SignerdConfig{
 		SigningKeyFingerprint: "4c:c6:1e:31:ed:7b:7c:33:ff:7d:51:9e:59:da:68:f5",
 		AuthorizedUsers: map[string]string{
 			"f6:e3:42:5e:72:85:ce:26:e8:45:1f:79:2d:dc:0d:52": "test-user",

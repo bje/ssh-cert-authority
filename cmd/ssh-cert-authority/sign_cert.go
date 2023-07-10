@@ -7,7 +7,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/cloudtools/ssh-cert-authority/client"
-	"github.com/cloudtools/ssh-cert-authority/util"
+	"github.com/cloudtools/ssh-cert-authority/internal/config"
+	"github.com/cloudtools/ssh-cert-authority/internal/util"
 	"github.com/codegangsta/cli"
 	"golang.org/x/crypto/ssh"
 	"io/ioutil"
@@ -53,8 +54,8 @@ func signCertFlags() []cli.Flag {
 
 func signCert(c *cli.Context) error {
 	configPath := c.String("config-file")
-	allConfig := make(map[string]ssh_ca_util.SignerConfig)
-	err := ssh_ca_util.LoadConfig(configPath, &allConfig)
+	allConfig := make(map[string]config.SignerConfig)
+	err := config.LoadConfig(configPath, &allConfig)
 	if err != nil {
 		return cli.NewExitError(fmt.Sprintf("Load Config failed: %s", err), 1)
 	}
@@ -67,18 +68,18 @@ func signCert(c *cli.Context) error {
 		}
 	}
 	environment := c.String("environment")
-	wrongTypeConfig, err := ssh_ca_util.GetConfigForEnv(environment, &allConfig)
+	wrongTypeConfig, err := config.GetConfigForEnv(environment, &allConfig)
 	if err != nil {
 		return cli.NewExitError(fmt.Sprintf("%s", err), 1)
 	}
-	config := wrongTypeConfig.(ssh_ca_util.SignerConfig)
+	config := wrongTypeConfig.(config.SignerConfig)
 
 	conn, err := net.Dial("unix", os.Getenv("SSH_AUTH_SOCK"))
 	if err != nil {
 		return cli.NewExitError(fmt.Sprintf("Dial failed: %s", err), 1)
 	}
 
-	signer, err := ssh_ca_util.GetSignerForFingerprint(config.KeyFingerprint, conn)
+	signer, err := util.GetSignerForFingerprint(config.KeyFingerprint, conn)
 	if err != nil {
 		return cli.NewExitError(fmt.Sprintf("%s", err), 1)
 	}
@@ -115,7 +116,7 @@ func signCert(c *cli.Context) error {
 		return cli.NewExitError(fmt.Sprintf("Trouble parsing response: %s", err), 1)
 	}
 	cert := *pubKey.(*ssh.Certificate)
-	ssh_ca_util.PrintForInspection(cert)
+	util.PrintForInspection(cert)
 	fmt.Printf("Type 'yes' if you'd like to sign this cert request, 'reject' to reject it, anything else to cancel ")
 	reader := bufio.NewReader(os.Stdin)
 	text, _ := reader.ReadString('\n')

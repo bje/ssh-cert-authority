@@ -3,7 +3,8 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"github.com/cloudtools/ssh-cert-authority/util"
+	"github.com/cloudtools/ssh-cert-authority/internal/config"
+	"github.com/cloudtools/ssh-cert-authority/internal/util"
 	"github.com/codegangsta/cli"
 	"golang.org/x/crypto/ssh"
 	"io/ioutil"
@@ -51,16 +52,16 @@ func getCert(c *cli.Context) error {
 	sshDir := c.String("ssh-dir")
 	certRequestID := c.Args().First()
 
-	allConfig := make(map[string]ssh_ca_util.RequesterConfig)
-	err := ssh_ca_util.LoadConfig(configPath, &allConfig)
+	allConfig := make(map[string]config.RequesterConfig)
+	err := config.LoadConfig(configPath, &allConfig)
 	if err != nil {
 		return cli.NewExitError(fmt.Sprintf("%s", err), 1)
 	}
-	wrongTypeConfig, err := ssh_ca_util.GetConfigForEnv(environment, &allConfig)
+	wrongTypeConfig, err := config.GetConfigForEnv(environment, &allConfig)
 	if err != nil {
 		return cli.NewExitError(fmt.Sprintf("%s", err), 1)
 	}
-	config := wrongTypeConfig.(ssh_ca_util.RequesterConfig)
+	config := wrongTypeConfig.(config.RequesterConfig)
 	cert, err := downloadCert(config, certRequestID, sshDir)
 	if err != nil {
 		return cli.NewExitError(fmt.Sprintf("%s", err), 1)
@@ -93,7 +94,7 @@ func addCertToAgent(cert *ssh.Certificate, sshDir string) error {
 	return nil
 }
 
-func downloadCert(config ssh_ca_util.RequesterConfig, certRequestID string, sshDir string) (*ssh.Certificate, error) {
+func downloadCert(config config.RequesterConfig, certRequestID string, sshDir string) (*ssh.Certificate, error) {
 	getResp, err := http.Get(config.SignerUrl + "cert/requests/" + certRequestID)
 	if err != nil {
 		return nil, fmt.Errorf("Didn't get a valid response: %s", err)
@@ -124,7 +125,7 @@ func downloadCert(config ssh_ca_util.RequesterConfig, certRequestID string, sshD
 		fmt.Printf("Couldn't write certificate file to %s: %s\n", pubKeyPath, err)
 	}
 
-	ssh_ca_util.PrintForInspection(*cert)
+	util.PrintForInspection(*cert)
 	return cert, nil
 }
 

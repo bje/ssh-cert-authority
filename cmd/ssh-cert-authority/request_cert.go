@@ -5,7 +5,8 @@ import (
 	"crypto/rand"
 	"fmt"
 	"github.com/cloudtools/ssh-cert-authority/client"
-	"github.com/cloudtools/ssh-cert-authority/util"
+	"github.com/cloudtools/ssh-cert-authority/internal/config"
+	"github.com/cloudtools/ssh-cert-authority/internal/util"
 	"github.com/codegangsta/cli"
 	"golang.org/x/crypto/ssh"
 	"io/ioutil"
@@ -80,20 +81,20 @@ func requestCertFlags() []cli.Flag {
 }
 
 func requestCert(c *cli.Context) error {
-	allConfig := make(map[string]ssh_ca_util.RequesterConfig)
+	allConfig := make(map[string]config.RequesterConfig)
 	configPath := c.String("config-file")
 	sshDir := c.String("ssh-dir")
-	err := ssh_ca_util.LoadConfig(configPath, &allConfig)
+	err := config.LoadConfig(configPath, &allConfig)
 	if err != nil {
 		return cli.NewExitError(fmt.Sprintf("Load Config failed: %s", err), 1)
 	}
 
 	environment := c.String("environment")
-	wrongTypeConfig, err := ssh_ca_util.GetConfigForEnv(environment, &allConfig)
+	wrongTypeConfig, err := config.GetConfigForEnv(environment, &allConfig)
 	if err != nil {
 		return cli.NewExitError(fmt.Sprintf("%s", err), 1)
 	}
-	config := wrongTypeConfig.(ssh_ca_util.RequesterConfig)
+	config := wrongTypeConfig.(config.RequesterConfig)
 
 	reason := c.String("reason")
 	if reason == "" {
@@ -129,7 +130,7 @@ func requestCert(c *cli.Context) error {
 		if err != nil {
 			return cli.NewExitError(fmt.Sprintf("Trouble parsing your public key: %s", err), 1)
 		}
-		chosenKeyFingerprint = ssh_ca_util.MakeFingerprint(pubKey.Marshal())
+		chosenKeyFingerprint = util.MakeFingerprint(pubKey.Marshal())
 	} else {
 		chosenKeyFingerprint = config.PublicKeyFingerprint
 		pubKeyComment = "unknown"
@@ -144,7 +145,7 @@ func requestCert(c *cli.Context) error {
 		return cli.NewExitError(fmt.Sprintf("Dial failed: %s", err), 1)
 	}
 
-	signer, err := ssh_ca_util.GetSignerForFingerprint(chosenKeyFingerprint, conn)
+	signer, err := util.GetSignerForFingerprint(chosenKeyFingerprint, conn)
 	if err != nil {
 		return cli.NewExitError(fmt.Sprintf("%s", err), 1)
 	}
