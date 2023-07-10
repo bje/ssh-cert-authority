@@ -1,4 +1,4 @@
-package ssh_ca_util
+package util
 
 import (
 	"crypto"

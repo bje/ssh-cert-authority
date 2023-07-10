@@ -36,9 +36,9 @@ configured to accept cert requests from bvz & dennis and that bvz is the
 only configured signer. When a cert gets the correct number of signers,
 1, the cert will be signed using the CA with fingerprint "00:f3:ce:..."::
 
-    map[string]ssh_ca_util.SignerdConfig{
+    map[string]config.SignerdConfig{
         "test":
-            ssh_ca_util.SignerdConfig{
+            config.SignerdConfig{
                 SigningKeyFingerprint: "00:f3:ce:02:e7:63:77:dc:65:be:c5:24:ee:1d:63:c0",
                 AuthorizedSigners: map[string]string{
                     "66:b5:be:e5:7e:09:3f:98:97:36:9b:64:ec:ea:3a:fe":"bvz"

@@ -534,12 +534,12 @@ generate a key from nist's p384 curve.
 Requesting Certificates
 =======================
 
-See USAGE.rst in this directory.
+See docs/USAGE.rst
 
 Signing Requests
 ================
 
-See USAGE.rst in this directory.
+See docs/USAGE.rst.
 
 All in one basic happy test case::
 

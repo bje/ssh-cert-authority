@@ -4,7 +4,8 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/cloudtools/ssh-cert-authority/util"
+	"github.com/cloudtools/ssh-cert-authority/internal/config"
+	"github.com/cloudtools/ssh-cert-authority/internal/util"
 	"golang.org/x/crypto/ssh"
 	"io/ioutil"
 	"net/http"
@@ -21,7 +22,7 @@ type CertRequest struct {
 	principals  []string
 	publicKey   ssh.PublicKey
 	keyID       string
-	config      ssh_ca_util.RequesterConfig
+	config      config.RequesterConfig
 }
 
 func MakeCertRequest() CertRequest {
@@ -32,10 +33,10 @@ func MakeCertRequest() CertRequest {
 type SigningRequest struct {
 	signedCert ssh.Certificate
 	requestID  string
-	config     ssh_ca_util.SignerConfig
+	config     config.SignerConfig
 }
 
-func MakeSigningRequest(cert ssh.Certificate, requestID string, config ssh_ca_util.SignerConfig) SigningRequest {
+func MakeSigningRequest(cert ssh.Certificate, requestID string, config config.SignerConfig) SigningRequest {
 	var request SigningRequest
 	request.signedCert = cert
 	request.requestID = requestID
@@ -84,7 +85,7 @@ func (req *SigningRequest) DeleteToWeb(requestParameters url.Values) error {
 	return nil
 }
 
-func (req *CertRequest) SetConfig(config ssh_ca_util.RequesterConfig) error {
+func (req *CertRequest) SetConfig(config config.RequesterConfig) error {
 	if config.SignerUrl == "" {
 		return fmt.Errorf("Signer URL is empty. This isn't going to work")
 	}
@@ -155,7 +156,7 @@ func (req *CertRequest) EncodeAsCertificate() (*ssh.Certificate, error) {
 		return nil, err
 	}
 
-	newCert := ssh_ca_util.MakeCertificate()
+	newCert := util.MakeCertificate()
 	newCert.Key = req.publicKey
 	newCert.Serial = 0
 	newCert.CertType = ssh.UserCert
